@@ -8,17 +8,23 @@ from PIL import Image
 global_image_dir = "./data/train/"
 file_open = lambda x,y: glob.glob(os.path.join(x,y))
 train_path_list = []
+train_labels = []
 test_path_list = []
+test_labels = []
+train_images = [];
 
-def get_file_names(row, path):
+def get_file_names(row, path,label):
     image_path = global_image_dir+row[1]+"/"+row[2]
     path.append(image_path)
+    label.append(row[1])
+
+def image_process(row):
     image = Image.open(image_path)
     image = image.resize((320,240))
     #train_images.append(np.array(image))
     print image
 
-def image_process(row):
+    """
     image_path = global_image_dir+row[1]+"/"+row[2]
     print image_path
     image_queue = tf.train.string_input_producer([image_path])
@@ -27,6 +33,7 @@ def image_process(row):
     current_img = tf.image.decode_jpeg(value)
     print current_img
     matrix_image(current_img)
+    """
 
 def matrix_image(image):
     image = list(image.getdata())
@@ -55,14 +62,33 @@ print "Train data shape : "+str(train_data.shape)
 print "Test data shape : "+str(test_data.shape)
 
 for row in train_data:
-    get_file_names(row,train_path_list)
+    get_file_names(row,train_path_list,train_labels)
 
 print "Train path list : "+str(train_path_list)
 
+print "Train labels : "+str(train_labels)
+
 filename_queue = tf.train.string_input_producer(train_path_list)
 image_reader = tf.WholeFileReader()
+img_key, image_file = image_reader.read(filename_queue)
 
+image = tf.image.decode_jpeg(image_file)
 
+with tf.Session() as sess:
+    # Required to get the filename matching to run.
+    tf.initialize_all_variables().run()
+
+    # Coordinate the loading of image files.
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord)
+
+    # Get an image tensor and print its value.
+    image_tensor = sess.run([image])
+    print(image_tensor)
+
+    # Finish off the filename queue coordinator.
+    coord.request_stop()
+    coord.join(threads)
 
 
 print filename_queue.size
