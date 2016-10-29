@@ -80,8 +80,8 @@ Building a queue for sending the data
 filename_queue = tf.train.string_input_producer(train_path_list)
 image_reader = tf.WholeFileReader()
 img_key, image_tensor = image_reader.read(filename_queue)
-image_tensor = tf.image.decode_jpeg(image_tensor)
-image_tensor = tf.image.resize_images(image_tensor,240, 320, method=0)
+image_tensor = tf.image.decode_jpeg(image_tensor,0,2)
+#image_tensor = tf.image.resize_images(image_tensor,240, 320, method=0)
 #label_tensor = tf.convert_to_tensor(train_labels)
 
 
@@ -92,7 +92,6 @@ img_prep = ImagePreprocessing()
 img_prep.add_featurewise_zero_center()
 img_prep.add_featurewise_stdnorm()
 
-# Input is a 32x32 image with 3 color channels (red, green and blue)
 network = input_data(shape=[None, 240, 320, 3],
                      data_preprocessing=img_prep,
                      data_augmentation=None)
@@ -102,24 +101,23 @@ network = conv_2d(network, 32, 3, activation='relu')
 
 # Step 2: Max pooling
 network = max_pool_2d(network, 2)
-"""
-# Step 3: Convolution again
+
+# Step 3: Convolution
 network = conv_2d(network, 64, 3, activation='relu')
 
-# Step 4: Convolution yet again
+# Step 4: Convolution
 network = conv_2d(network, 64, 3, activation='relu')
 
-# Step 5: Max pooling again
+# Step 5: Max pooling
 network = max_pool_2d(network, 2)
-"""
 
 # Step 6: Fully-connected 512 node neural network
 network = fully_connected(network, 512, activation='relu')
 
-# Step 7: Dropout - throw away some data randomly during training to prevent over-fitting
+# Step 7: Dropout - to prevent over-fitting
 network = dropout(network, 0.5)
 
-# Step 8: Fully-connected neural network with two outputs (0=isn't a bird, 1=is a bird) to make the final prediction
+# Step 8: Fully-connected neural network with 10 outputss
 network = fully_connected(network, 10, activation='softmax')
 
 # Tell tflearn how we want to train the network
@@ -142,9 +140,9 @@ with tf.Session() as sess:
     # Get an image tensor and print its value.
     for i in range(len(train_labels)):
         current_img = sess.run([image_tensor])
-        #print "Image tensor : "+str(current_img)
+        print "Image tensor : "+str(current_img[0].shape)
         #print "Label : "+str(train_labels[i])
-        model.fit({'input1': current_img}, {'output1': train_labels[i]},show_metric=True)
+        model.fit({'input1': current_img[0]}, {'output1': train_labels[i]},show_metric=True)
 
     # Finish off the filename queue coordinator.
     coord.request_stop()
