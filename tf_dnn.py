@@ -64,15 +64,15 @@ print "Test data shape : "+str(test_data.shape)
 for row in train_data:
     get_file_names(row,train_path_list,train_labels)
 
-print "Train path list : "+str(train_path_list)
-
-print "Train labels : "+str(train_labels)
+#print "Train path list : "+str(train_path_list)
+#print "Train labels : "+str(train_labels)
 
 filename_queue = tf.train.string_input_producer(train_path_list)
 image_reader = tf.WholeFileReader()
-img_key, image_file = image_reader.read(filename_queue)
-
-image = tf.image.decode_jpeg(image_file)
+img_key, image_tensor = image_reader.read(filename_queue)
+image_tensor = tf.image.decode_jpeg(image_tensor)
+#image_tensor = tf.image.resize_images(image_tensor, [320, 240], method=0)
+label_tensor = tf.convert_to_tensor(train_labels)
 
 with tf.Session() as sess:
     # Required to get the filename matching to run.
@@ -83,8 +83,10 @@ with tf.Session() as sess:
     threads = tf.train.start_queue_runners(coord=coord)
 
     # Get an image tensor and print its value.
-    image_tensor = sess.run([image])
-    print(image_tensor)
+    for i in range(5):
+        image_tensor, label = sess.run([image_tensor, label_tensor])
+        print "Image tensor : "+str(image_tensor)
+        print "Label : "+str(label)
 
     # Finish off the filename queue coordinator.
     coord.request_stop()
