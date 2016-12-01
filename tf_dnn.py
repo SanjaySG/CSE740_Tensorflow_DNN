@@ -15,7 +15,7 @@ from tflearn.data_augmentation import ImageAugmentation
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 
-global_image_dir = "./data/train/"
+global_image_dir = "./train/"
 file_open = lambda x,y: glob.glob(os.path.join(x,y))
 train_path_list = []
 train_labels = []
@@ -26,7 +26,10 @@ train_images = []
 def get_file_names(row, path,label):
     image_path = global_image_dir+row[1]+"/"+row[2]
     path.append(image_path)
-    label.append(row[1])
+    #temp_label = np.zeros((10))
+    temp_label = [0 for x in range(10)]
+    temp_label[int(row[1][1])] = 1
+    label.append(temp_label)
 
 def image_process(row):
     image = Image.open(image_path)
@@ -53,7 +56,7 @@ def matrix_image(image):
     print image
 
 def preprocess():
-    data_df = pandas.read_csv('./data/driver_imgs_list.csv',na_filter=False)
+    data_df = pandas.read_csv('./driver_imgs_list.csv',na_filter=False)
     print(data_df.columns)
     print data_df.shape
     trainSize = int(data_df.shape[0]*0.8)
@@ -74,7 +77,7 @@ def preprocess():
 
 
 def get_cnn_model():
-    network = input_data(shape=[None, 480, 640, 3],data_preprocessing=img_prep,data_augmentation=None)
+    network = input_data(shape=[None, 480, 640, 1],name='input')
 
     # Step 1: Convolution
     network = conv_2d(network, 32, 3, activation='relu')
@@ -117,7 +120,7 @@ def get_auto_enc():
 
     decoder2 = tflearn.fully_connected(encoder2, 256)
 
-    decoder1 = tflearn.fully_connected(decoder2, 512)
+    decoder1 = tflearn.fully_connected(delcoder2, 512)
 
     output = tflearn.fully_connected(decoder1, 307200)
 
@@ -143,10 +146,10 @@ preprocess()
 """
 Building a queue for sending the data
 """
-batch_size = 100
+batch_size = 1
 images = ops.convert_to_tensor(train_path_list, dtype=dtypes.string)
-labels = ops.convert_to_tensor(train_labels, dtype=dtypes.string)
-
+#labels = ops.convert_to_tensor(train_labels, dtype=dtypes.ndarr)
+labels = tf.constant(train_labels)
 filename_queue = tf.train.slice_input_producer([images, labels], shuffle=True)
 
 reader = tf.read_file(filename_queue[0])
@@ -172,7 +175,7 @@ with tf.Session() as sess:
     # Coordinate the loading of image files.
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
-    model = get_auto_enc()
+    model = get_cnn_model()
     # Get an image tensor and print its value.
     #for i in range(len(train_labels)/batch_size):
     for i in range(1):
@@ -181,9 +184,10 @@ with tf.Session() as sess:
         #print "Label : "+str(train_labels[i])
         xs,ys = sess.run([images_batch,labels_batch])
         xs = sess.run(images_batch)
-        xs = xs.reshape((batch_size,307200))
-        print xs.shape
-	model.fit(xs, xs, n_epoch=10, run_id="model")
+        print "Before "+ str(xs.shape)
+        xs = xs.reshape((batch_size,480,640,1))
+        print ys.shape
+        model.fit({'input':xs}, ys, validation_set={xs,ys}, n_epoch=10, run_id="model")
 
     # Finish off the filename queue coordinator.
     coord.request_stop()
@@ -220,4 +224,3 @@ print "Number of images : "+str(n)
 for i in range(n):
     train_images[i] = flatten_image(matrix_image(train_images[i]))
 """
-
