@@ -185,7 +185,7 @@ with tf.Session() as sess:
     images_batch, labels_batch = convert_to_batch(train_path_list,train_labels)
     # Get an image tensor and print its value.
     #for i in range(len(train_labels)/batch_size):
-    for i in range((len(train_path_list)/batch_size)):
+    for i in range(int(len(train_path_list)/batch_size)):
         xs,ys = sess.run([images_batch,labels_batch])
         print("Before "+ str(xs.shape))
         xs = xs.reshape((batch_size,480,640,1))
@@ -204,7 +204,7 @@ with tf.Session() as sess:
 
     print("Ruuning evalute on test data")
     images_batch,labels_batch = convert_to_batch(test_path_list,test_labels)
-    for i in range((len(train_path_list)/batch_size)):
+    for i in range(int(len(train_path_list)/batch_size)):
         testX,testY = sess.run([images_batch,labels_batch])
         testX = testX.reshape((batch_size,480,640,1))
         model.evaluate(testX,testY,batch_size)
